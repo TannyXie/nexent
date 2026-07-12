@@ -8,6 +8,17 @@ import { updateAgentInfo, updateToolConfig, searchToolConfig, searchAgentInfo } 
 import { Agent } from "@/types/agentConfig";
 import log from "@/lib/logger";
 
+function deriveAgentVariableName(value: string | undefined): string {
+  const normalized = (value || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 50);
+
+  if (!normalized) return "";
+  return /^[a-zA-Z_]/.test(normalized) ? normalized : `agent_${normalized}`;
+}
+
 /**
  * Batch update tool configurations for an agent
  * Handles create, update, and enable/disable operations
@@ -96,9 +107,10 @@ export const useSaveGuard = () => {
     try {
       const currentEditedAgent = useAgentConfigStore.getState().editedAgent;
       const currentAgentId = useAgentConfigStore.getState().currentAgentId;
+      const agentName = currentEditedAgent.name.trim() || deriveAgentVariableName(currentEditedAgent.display_name);
 
       // Validate required fields
-      if (!currentEditedAgent.name.trim()) {
+      if (!agentName.trim()) {
         message.error(t("agent.validation.nameRequired"));
         return false;
       }
@@ -126,7 +138,7 @@ export const useSaveGuard = () => {
 
       const result = await updateAgentInfo({
         agent_id: currentAgentId ?? undefined, // undefined=create, number=update
-        name: currentEditedAgent.name,
+        name: agentName,
         display_name: currentEditedAgent.display_name,
         description: currentEditedAgent.description,
         author: currentEditedAgent.author,

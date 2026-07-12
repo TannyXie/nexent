@@ -483,6 +483,17 @@ export default function AgentGenerateDetail({}) {
     handleCloseOptimizeModal();
   };
 
+  const deriveAgentVariableName = (value: string) => {
+    const normalized = value
+      .trim()
+      .replace(/[^a-zA-Z0-9_]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 50);
+
+    if (!normalized) return "";
+    return /^[a-zA-Z_]/.test(normalized) ? normalized : `agent_${normalized}`;
+  };
+
   // Generic validator for agent field uniqueness - use local agent list instead of API call
   const validateAgentFieldUnique = async (
     _: any,
@@ -727,9 +738,30 @@ export default function AgentGenerateDetail({}) {
                       >
                         <Input
                           placeholder={t("agent.displayNamePlaceholder")}
-                          onBlur={(e) =>
-                            updateAgentConfig({ display_name: e.target.value })
-                          }
+                          onChange={(e) => {
+                            const displayName = e.target.value;
+                            const update: AgentConfigUpdate = { display_name: displayName };
+
+                            if (!form.getFieldValue("agentName")?.trim()) {
+                              const generatedName = deriveAgentVariableName(displayName);
+                              form.setFieldsValue({ agentName: generatedName });
+                              update.name = generatedName;
+                            }
+
+                            updateAgentConfig(update);
+                          }}
+                          onBlur={(e) => {
+                            const displayName = e.target.value;
+                            const update: AgentConfigUpdate = { display_name: displayName };
+
+                            if (!form.getFieldValue("agentName")?.trim()) {
+                              const generatedName = deriveAgentVariableName(displayName);
+                              form.setFieldsValue({ agentName: generatedName });
+                              update.name = generatedName;
+                            }
+
+                            updateAgentConfig(update);
+                          }}
                         />
                       </Form.Item>
 
